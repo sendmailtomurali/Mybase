@@ -32,6 +32,8 @@
 	<string>Pri3</string>
 	<key>NSLocationUsageDescription</key>
 	<string>Pri4</string>
+	<key>NSMotionUsageDescription</key>
+	<string>This app is help people avoid phone usage while driving</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
