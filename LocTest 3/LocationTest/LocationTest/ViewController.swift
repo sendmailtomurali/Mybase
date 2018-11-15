@@ -10,6 +10,7 @@ import UIKit
 import CoreLocation
 import UserNotifications
 import CallKit
+import CoreMotion
 
 class ViewController: UIViewController,CLLocationManagerDelegate {
     
@@ -19,67 +20,60 @@ class ViewController: UIViewController,CLLocationManagerDelegate {
     var registered : Bool = false
     var count: Int = 0
     let locationManager:CLLocationManager = CLLocationManager()
+    let motionActivityManager = CMMotionActivityManager()
     
     @IBOutlet weak var txtSpeed: UITextField!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-    //Krishnan:Notification Parameters
+        //Krishnan:Notification Parameters
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge], completionHandler: {didAllow, Error in})
-   
-    //Krishnan:Use default parameters and start the background service.
-    //We are not pausing in this build yet
-        locationManager.delegate = self
-        locationManager.requestAlwaysAuthorization()
-        locationManager.startMonitoringSignificantLocationChanges()
-        locationManager.allowsBackgroundLocationUpdates = true
-        locationManager.pausesLocationUpdatesAutomatically = false
-        print(registered)
         
         //Krishnan:Call default Parameters
         callObserver = CXCallObserver()
-        callObserver.setDelegate(self as! CXCallObserverDelegate, queue: nil) // nil queue means main thread
+        callObserver.setDelegate(self as CXCallObserverDelegate, queue: nil) // nil queue means main thread
+        
+        //
+        self.locationManager.delegate = self
+        self.locationManager.requestAlwaysAuthorization()
+        self.locationManager.startMonitoringSignificantLocationChanges()
+        self.locationManager.allowsBackgroundLocationUpdates = true
+        self.locationManager.pausesLocationUpdatesAutomatically = false
+        
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        //Krishnan: For every update, count up
         
-        registered = true
-        print(registered)
-        
-        //Krishnan:Start fine location updates with default parameters for preset count
-        if (registered == true) && (count < 20) {
-            locationManager.stopMonitoringSignificantLocationChanges()
-            locationManager.startUpdatingLocation()
+        // Location Manager
+        if CMMotionActivityManager.isActivityAvailable() {
+            motionActivityManager.startActivityUpdates(to: OperationQueue.main) { (motion) in
+                
+                self.txtSpeed.text = (motion?.automotive)! ? "Automotive True" : "Automotive False"
+                self.msgbody = (motion?.automotive)! ? "Automotive : True" : "Automotive : False"
+                //self.automotiveLabel.text = (motion?.automotive)! ? "True" : "False"
+                
+            }
+        }
+        else{
+            self.txtSpeed.text = "No Data Available"
+            self.msgbody = "No Data Available"
         }
         
-        //Krishnan: For every update, count up
         for currentLocation in locations{
             print("\(index): \(currentLocation)")
             count += 1
             print (count)
-            txtSpeed.text = String(currentLocation.speed)
-        
-        //Krishnan: When counter reaches preset, stop fine and switch to Significant
-            if (registered == true) && count >= 20 {
-                locationManager.stopUpdatingLocation()
-                locationManager.startMonitoringSignificantLocationChanges()
-            }
-        
-        //Krishnan: Reset Counter
-            if registered == false {
-                count = 0
-            }
-        
-        //Nofification to check if this program runs in background
-            msgbody = String(currentLocation.speed)
-            let content = UNMutableNotificationContent()
-            content.title = "The 5 seconds are up!"
-            content.subtitle = "Really"
-            content.body = msgbody
-            content.badge = 1
+            //Nofification to check if this program runs in background
             
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+            let content = UNMutableNotificationContent()
+            content.title = "The count is : " + String(count)
+            content.subtitle = "Significant Location"
+            content.body = "Activity is " + msgbody
+            content.badge = count as NSNumber
+            
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 60, repeats: false)
             
             let request = UNNotificationRequest(identifier: "TimerDone", content: content, trigger: trigger)
             UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
