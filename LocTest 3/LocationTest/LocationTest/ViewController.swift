@@ -40,6 +40,7 @@ class ViewController: UIViewController,CLLocationManagerDelegate {
         self.locationManager.startMonitoringSignificantLocationChanges()
         self.locationManager.allowsBackgroundLocationUpdates = true
         self.locationManager.pausesLocationUpdatesAutomatically = false
+        print("Loaded")
         
     }
     
